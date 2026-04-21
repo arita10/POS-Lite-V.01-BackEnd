@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>POS Lite — Lisans Yönetimi</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+
+  /* Login */
+  #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-card { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px #0001; padding: 40px; width: 360px; }
+  .login-card h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+  .login-card p { color: #64748b; font-size: .875rem; margin-bottom: 24px; }
+
+  /* Layout */
+  #app { display: none; }
+  .topbar { background: #1e40af; color: #fff; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: .5px; }
+  .topbar span { font-size: .8rem; opacity: .7; }
+  .content { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 4px #0001; }
+  .stat-card .num { font-size: 2rem; font-weight: 800; }
+  .stat-card .lbl { font-size: .75rem; color: #64748b; margin-top: 2px; }
+  .stat-card.active .num { color: #16a34a; }
+  .stat-card.expired .num { color: #dc2626; }
+  .stat-card.devices .num { color: #2563eb; }
+
+  /* Card */
+  .card { background: #fff; border-radius: 14px; box-shadow: 0 1px 4px #0001; margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+  .card-header h2 { font-size: 1rem; font-weight: 700; }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 20px; }
+  @media(max-width:600px){ .form-grid { grid-template-columns: 1fr; } }
+  .form-group label { display: block; font-size: .78rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 8px 12px; font-size: .875rem; outline: none; background: #f8fafc;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus { border-color: #3b82f6; background: #fff; }
+  .form-actions { padding: 0 20px 20px; display: flex; gap: 10px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-success { background: #16a34a; color: #fff; }
+  .btn-danger  { background: #dc2626; color: #fff; }
+  .btn-warning { background: #d97706; color: #fff; }
+  .btn-ghost   { background: #f1f5f9; color: #374151; }
+  .btn-sm { padding: 4px 10px; font-size: .78rem; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th { background: #f8fafc; padding: 10px 16px; text-align: left; font-size: .75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+  td { padding: 12px 16px; border-top: 1px solid #f1f5f9; vertical-align: top; }
+  tr:hover td { background: #fafafa; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .73rem; font-weight: 700; }
+  .badge-green  { background: #dcfce7; color: #166534; }
+  .badge-red    { background: #fee2e2; color: #991b1b; }
+  .badge-yellow { background: #fef9c3; color: #854d0e; }
+  .badge-gray   { background: #f1f5f9; color: #475569; }
+  .key-code { font-family: monospace; font-size: .82rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+  .devices-list { font-size: .75rem; color: #64748b; margin-top: 4px; }
+
+  /* Modal */
+  .modal-bg { display: none; position: fixed; inset: 0; background: #0006; z-index: 100; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #fff; border-radius: 16px; width: 420px; max-width: 95vw; padding: 24px; }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+  .modal .form-group { margin-bottom: 12px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: .875rem; opacity: 0; transition: opacity .3s; z-index: 200; }
+  .toast.show { opacity: 1; }
+  .empty { text-align: center; padding: 40px; color: #94a3b8; font-size: .875rem; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🔐 POS Lite Admin</h1>
+    <p>Devam etmek için admin anahtarınızı girin</p>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Admin Anahtarı</label>
+      <input type="password" id="admin-key-input" placeholder="admin-secret-key-..." onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Giriş Yap</button>
+    <p id="login-error" style="color:#dc2626;font-size:.8rem;margin-top:10px;display:none"></p>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <div class="topbar">
+    <h1>🛡️ POS Lite — Lisans Yönetimi</h1>
+    <span id="admin-label"></span>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats" id="stats-row">
+      <div class="stat-card"><div class="num" id="s-total">—</div><div class="lbl">Toplam Lisans</div></div>
+      <div class="stat-card active"><div class="num" id="s-active">—</div><div class="lbl">Aktif</div></div>
+      <div class="stat-card expired"><div class="num" id="s-expired">—</div><div class="lbl">Süresi Dolmuş / İptal</div></div>
+      <div class="stat-card devices"><div class="num" id="s-devices">—</div><div class="lbl">Kayıtlı Cihaz</div></div>
+    </div>
+
+    <!-- Create form -->
+    <div class="card">
+      <div class="card-header">
+        <h2>➕ Yeni Lisans Oluştur</h2>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Müşteri Adı *</label>
+          <input type="text" id="f-name" placeholder="Yıldız Market"/>
+        </div>
+        <div class="form-group">
+          <label>E-posta</label>
+          <input type="email" id="f-email" placeholder="musteri@email.com"/>
+        </div>
+        <div class="form-group">
+          <label>Son Kullanma Tarihi *</label>
+          <input type="date" id="f-expires"/>
+        </div>
+        <div class="form-group">
+          <label>Maksimum Cihaz</label>
+          <select id="f-devices">
+            <option value="1">1 Cihaz</option>
+            <option value="2" selected>2 Cihaz</option>
+            <option value="3">3 Cihaz</option>
+            <option value="5">5 Cihaz</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Notlar</label>
+          <input type="text" id="f-notes" placeholder="Aylık abonelik, ödeme tarihi vb."/>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-success" onclick="createLicense()">✅ Lisans Oluştur</button>
+      </div>
+    </div>
+
+    <!-- License list -->
+    <div class="card">
+      <div class="card-header">
+        <h2>📋 Tüm Lisanslar</h2>
+        <button class="btn btn-ghost btn-sm" onclick="loadAll()">🔄 Yenile</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Müşteri</th>
+              <th>Lisans Anahtarı</th>
+              <th>Son Kullanma</th>
+              <th>Durum</th>
+              <th>Cihazlar</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="license-table-body">
+            <tr><td colspan="6" class="empty">Yükleniyor...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Extend Modal -->
+<div class="modal-bg" id="extend-modal">
+  <div class="modal">
+    <h3>📅 Lisansı Uzat</h3>
+    <input type="hidden" id="extend-id"/>
+    <div class="form-group">
+      <label>Yeni Son Kullanma Tarihi</label>
+      <input type="date" id="extend-date"/>
+    </div>
+    <div class="form-group">
+      <label>Not (opsiyonel)</label>
+      <input type="text" id="extend-notes" placeholder="Yenileme notu..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('extend-modal')">İptal</button>
+      <button class="btn btn-primary" onclick="doExtend()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Copy toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = 'http://localhost:3100/api';
+  let ADMIN_KEY = '';
+
+  // ── Login ────────────────────────────────────────────────
+  async function doLogin() {
+    const key = document.getElementById('admin-key-input').value.trim();
+    if (!key) return;
+    try {
+      const res = await fetch(`${API}/license/admin/stats`, { headers: { 'x-admin-key': key } });
+      if (!res.ok) throw new Error();
+      ADMIN_KEY = key;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('admin-label').textContent = 'Admin: ' + key.slice(0, 8) + '...';
+      loadAll();
+    } catch {
+      const el = document.getElementById('login-error');
+      el.textContent = 'Geçersiz admin anahtarı.';
+      el.style.display = 'block';
+    }
+  }
+
+  // ── Headers ──────────────────────────────────────────────
+  function headers() { return { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' }; }
+
+  // ── Load stats + licenses ────────────────────────────────
+  async function loadAll() {
+    loadStats();
+    loadLicenses();
+  }
+
+  async function loadStats() {
+    const res = await fetch(`${API}/license/admin/stats`, { headers: headers() });
+    const d = await res.json();
+    document.getElementById('s-total').textContent   = d.total;
+    document.getElementById('s-active').textContent  = d.active;
+    document.getElementById('s-expired').textContent = d.expired;
+    document.getElementById('s-devices').textContent = d.activeDevices;
+  }
+
+  async function loadLicenses() {
+    const res = await fetch(`${API}/license/admin/list`, { headers: headers() });
+    const list = await res.json();
+    const tbody = document.getElementById('license-table-body');
+
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Henüz lisans yok.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(l => {
+      const now = Date.now();
+      const exp = new Date(l.expiresAt).getTime();
+      const expStr = new Date(l.expiresAt).toLocaleDateString('tr-TR');
+      const daysLeft = Math.floor((exp - now) / 86400000);
+      const isExpired = exp < now;
+      const statusBadge = !l.isActive
+        ? '<span class="badge badge-gray">İptal</span>'
+        : isExpired
+          ? '<span class="badge badge-red">Süresi Doldu</span>'
+          : daysLeft <= 7
+            ? `<span class="badge badge-yellow">⚠️ ${daysLeft} gün</span>`
+            : '<span class="badge badge-green">Aktif</span>';
+
+      const activeDevices = l.devices.filter(d => d.isActive);
+      const devicesHtml = activeDevices.length === 0
+        ? '<span style="color:#94a3b8;font-size:.75rem">Cihaz yok</span>'
+        : activeDevices.map(d =>
+            `<div class="devices-list">📱 ${d.label ?? 'Bilinmiyor'}
+              <button class="btn btn-danger btn-sm" style="margin-left:6px" onclick="revokeDevice('${d.id}')">Engelle</button>
+            </div>`
+          ).join('');
+
+      return `<tr>
+        <td>
+          <div style="font-weight:600">${esc(l.customerName)}</div>
+          <div style="font-size:.75rem;color:#64748b">${esc(l.customerEmail ?? '')}</div>
+          ${l.notes ? `<div style="font-size:.72rem;color:#94a3b8;margin-top:2px">${esc(l.notes)}</div>` : ''}
+        </td>
+        <td>
+          <span class="key-code">${esc(l.key)}</span>
+          <button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="copyKey('${esc(l.key)}')">📋 Kopyala</button>
+        </td>
+        <td>${expStr}<br/><span style="font-size:.72rem;color:${isExpired?'#dc2626':'#64748b'}">${isExpired ? 'Süresi doldu' : daysLeft + ' gün kaldı'}</span></td>
+        <td>${statusBadge}</td>
+        <td>${devicesHtml}<div style="font-size:.72rem;color:#94a3b8;margin-top:4px">${activeDevices.length}/${l.maxDevices} cihaz</div></td>
+        <td>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button class="btn btn-warning btn-sm" onclick="openExtend('${l.id}', '${l.expiresAt}')">📅 Uzat</button>
+            ${l.isActive
+              ? `<button class="btn btn-danger btn-sm" onclick="revokeLicense('${l.id}')">🚫 İptal</button>`
+              : `<button class="btn btn-success btn-sm" onclick="reactivateLicense('${l.id}')">✅ Aktif Et</button>`
+            }
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Create ───────────────────────────────────────────────
+  async function createLicense() {
+    const name    = document.getElementById('f-name').value.trim();
+    const email   = document.getElementById('f-email').value.trim();
+    const expires = document.getElementById('f-expires').value;
+    const devices = document.getElementById('f-devices').value;
+    const notes   = document.getElementById('f-notes').value.trim();
+    if (!name || !expires) { showToast('❌ Müşteri adı ve tarih zorunlu.'); return; }
+
+    const res = await fetch(`${API}/license/admin/create`, {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ customerName: name, customerEmail: email || undefined, expiresAt: expires, maxDevices: Number(devices), notes: notes || undefined }),
+    });
+    const d = await res.json();
+    if (!res.ok) { showToast('❌ ' + (d.message ?? 'Hata')); return; }
+
+    showToast('✅ Lisans oluşturuldu: ' + d.key);
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-email').value = '';
+    document.getElementById('f-expires').value = '';
+    document.getElementById('f-notes').value = '';
+    loadAll();
+  }
+
+  // ── Extend ───────────────────────────────────────────────
+  function openExtend(id, currentExpiry) {
+    document.getElementById('extend-id').value = id;
+    document.getElementById('extend-date').value = currentExpiry.split('T')[0];
+    document.getElementById('extend-modal').classList.add('open');
+  }
+
+  async function doExtend() {
+    const id      = document.getElementById('extend-id').value;
+    const expires = document.getElementById('extend-date').value;
+    const notes   = document.getElementById('extend-notes').value.trim();
+    if (!expires) { showToast('❌ Tarih seçin.'); return; }
+
+    await fetch(`${API}/license/admin/${id}`, {
+      method: 'PATCH', headers: headers(),
+      body: JSON.stringify({ expiresAt: expires, ...(notes ? { notes } : {}) }),
+    });
+    closeModal('extend-modal');
+    showToast('✅ Lisans güncellendi.');
+    loadAll();
+  }
+
+  // ── Revoke / Reactivate ──────────────────────────────────
+  async function revokeLicense(id) {
+    if (!confirm('Bu lisansı iptal etmek istediğinizden emin misiniz?')) return;
+    await fetch(`${API}/license/admin/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ isActive: false }) });
+    showToast('🚫 Lisans iptal edildi.');
+    loadAll();
+  }
+
+  async function reactivateLicense(id) {
+    await fetch(`${API}/license/admin/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ isActive: true }) });
+    showToast('✅ Lisans aktif edildi.');
+    loadAll();
+  }
+
+  async function revokeDevice(deviceId) {
+    if (!confirm('Bu cihazı engellemek istediğinizden emin misiniz?')) return;
+    await fetch(`${API}/license/admin/device/${deviceId}/revoke`, { method: 'PATCH', headers: headers() });
+    showToast('📱 Cihaz engellendi.');
+    loadAll();
+  }
+
+  // ── Helpers ──────────────────────────────────────────────
+  function copyKey(key) {
+    navigator.clipboard.writeText(key).then(() => showToast('📋 Kopyalandı: ' + key));
+  }
+
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Set default expiry to 1 year from today
+  const d = new Date(); d.setFullYear(d.getFullYear() + 1);
+  document.getElementById('f-expires').value = d.toISOString().split('T')[0];
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model License {
+  id            String    @id @default(uuid())
+  shopId        String    @unique @default(uuid())  // stable shop identity — never changes
+  key           String    @unique
+  customerName  String
+  customerEmail String?
+  expiresAt     DateTime
+  isActive      Boolean   @default(true)
+  maxDevices    Int       @default(2)
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  devices       Device[]
+  checkIns      CheckIn[]
+}
+
+model Device {
+  id          String    @id @default(uuid())
+  licenseId   String
+  fingerprint String
+  label       String?   // e.g. "Chrome / Windows / Yıldız Market"
+  lastSeenAt  DateTime  @default(now())
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  license     License   @relation(fields: [licenseId], references: [id])
+
+  @@unique([licenseId, fingerprint])
+}
+
+model CheckIn {
+  id          String    @id @default(uuid())
+  licenseId   String
+  fingerprint String
+  ip          String?
+  checkedAt   DateTime  @default(now())
+
+  license     License   @relation(fields: [licenseId], references: [id])
+}
