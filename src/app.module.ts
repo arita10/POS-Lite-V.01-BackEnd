@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { LicenseModule } from './license/license.module';
+import { PrintModule } from './print/print.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { LicenseModule } from './license/license.module';
       serveStaticOptions: { index: 'admin.html' },
     }),
     LicenseModule,
+    PrintModule,
   ],
 })
 export class AppModule {}
